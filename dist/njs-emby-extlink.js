@@ -1,6 +1,6 @@
 
 /*!
-* ${njs-emby-extlink} ${09c24587c42f35338b2787580ce2835d196e54e6}
+* ${njs-emby-extlink} ${d83850dbc8d6a0930e76342253f4e82520741ad8}
 * 
 * Date: 2022-10-23
 * */
@@ -659,7 +659,7 @@ Source : https://github.com/faisalman/ua-parser-js */
 })(typeof window === 'object' ? window : commonjsGlobal);
 });
 
-// import { parse, stringify } from 'flatted';
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 // import { parse, stringfy } from 'secure-json-parse'
 
 // Plugin Slug
@@ -813,7 +813,7 @@ function addExtLinkFilter(r, data, flags) {
             var subMediaStream = subMediaStreams[j];
 
             if (subMediaStream.Type === 'Video') {
-              var _uaParsed$os$name, _uaParsed$os$name2, _uaParsed$os$name3;
+              var _params$XEmbyClient, _uaParsed$os$name, _params$XEmbyClient2, _params$XEmbyClient3, _params$XEmbyClient4, _params$XEmbyClient5, _uaParsed$os$name2, _uaParsed$os$name3;
 
               var videoFileExt = pathParse(path).ext;
               var videoFileName = `${bodyObj.Name} (${bodyObj.ProductionYear})`;
@@ -828,7 +828,7 @@ function addExtLinkFilter(r, data, flags) {
                   prefix = subMediaStream.DisplayTitle
               }*/
 
-              if (uaParsed.os.name == 'iOS') {
+              if (uaParsed.os.name == 'iOS' || (_params$XEmbyClient = params['X-Emby-Client']) != null && _params$XEmbyClient.includes('iOS') || uaParsed.os.name == 'Mac OS') {
                 extPlayList.push({
                   //Url: host + embyPlguin + 'infuse://x-callback-url/play?url=' + encodeURIComponent(videoUrl),
                   Url: `${protocol}//${host}${PLUGIN_PATH_SLUG}?Player=Infuse&Stream=${encodeURIComponent(videoUrl)}`,
@@ -836,7 +836,7 @@ function addExtLinkFilter(r, data, flags) {
                 });
               }
 
-              if (uaParsed.os.name == 'iOS' || (_uaParsed$os$name = uaParsed.os.name) != null && _uaParsed$os$name.startsWith('Android')) {
+              if (uaParsed.os.name == 'iOS' || (_uaParsed$os$name = uaParsed.os.name) != null && _uaParsed$os$name.startsWith('Android') || (_params$XEmbyClient2 = params['X-Emby-Client']) != null && _params$XEmbyClient2.includes('iOS') || (_params$XEmbyClient3 = params['X-Emby-Client']) != null && _params$XEmbyClient3.includes('Android')) {
                 extPlayList.push({
                   Url: `${protocol}//${host}${PLUGIN_PATH_SLUG}?Player=nPlayer&Stream=${encodeURIComponent(videoUrl)}`,
                   Name: mediaSources.length > 1 ? `${subMediaStream.DisplayTitle} - nPlayer` : 'nPlayer'
@@ -847,7 +847,7 @@ function addExtLinkFilter(r, data, flags) {
                 });
               }
 
-              if (uaParsed.os.name == 'Mac OS') {
+              if (uaParsed.os.name == 'Mac OS' && !((_params$XEmbyClient4 = params['X-Emby-Client']) != null && _params$XEmbyClient4.includes('iOS')) && !((_params$XEmbyClient5 = params['X-Emby-Client']) != null && _params$XEmbyClient5.includes('tvOS'))) {
                 extPlayList.push({
                   Url: `${protocol}//${host}${PLUGIN_PATH_SLUG}?Player=IINA&Stream=${encodeURIComponent(videoUrl)}`,
                   Name: mediaSources.length > 1 ? `${subMediaStream.DisplayTitle} - IINA` : 'IINA'
@@ -1764,13 +1764,38 @@ function contentTypeJson(r) {
   // r.headersOut["Content-Type"] = "application/json";
 }
 
+function x_emby_token(r) {
+  var param = r.args;
+  var headers = r.headersIn; // r.error(`${JSON.stringify(param)}`);
+
+  var realIpStrs = r.headersIn['X-Forwarded-For'] || r.remoteAddress;
+  var realIp = realIpStrs.split(',')[0]; // Token
+
+  var xEmbyToken = param['X-Emby-Token'] ? param['X-Emby-Token'] : '';
+  var apiKey = param['api_key'] ? param['api_key'] : '';
+  headers['X-Emby-Token'] ? headers['X-Emby-Token'] : '';
+
+  if (xEmbyToken || apiKey) {
+    r.log(`[NJS] X-Emby-Token: ${apiKey ? apiKey : xEmbyToken} (IP: ${realIp})`);
+  }
+
+  if (apiKey) {
+    return apiKey;
+  }
+
+  if (xEmbyToken) {
+    return xEmbyToken;
+  }
+}
+
 // import { hello } from './hello'
 
 var index = {
   addExtLinkFilter,
   concealPublicInfo,
   handleExtPlay,
-  contentTypeJson
+  contentTypeJson,
+  x_emby_token
 };
 
 export default index;
