@@ -1,0 +1,84 @@
+= NJS Emby Enhancer
+:toc: macro
+:toc-title:
+:gh-name: etnperlong/njs-emby-extlink
+// non-breakable hyphen
+:nb-: &#8209;
+:imagesdir: screenshots
+
+A module enhances https://emby.media/[Emby] to call external video players to play media on your hosted server, powered by https://github.com/nginx/njs[njs] (NGINX JavaScript).
+
+
+[discrete]
+== Table of Contents
+
+toc::[]
+
+== Features
+
+* Supporting Emby WebUI/iOS Client/Android Client
+* Supporting multiple media sources
+* Auto-detection for platform & system, only showing available players
+* Additional Components: Concealing the real address of the server to avoid IP leakage
+
+== Screenshot
+
+image::WebUI.png[caption="Web UI"]
+image::Android_Emby.png[caption="Android Emby Client"]
+
+
+== Usage
+
+. Download `dist/njs-emby-extlink.js` and put it in nginx working folder
+. Insert a line in `nginx.conf` to load NJS engine
++
+[source]
+# Load NJS Engine
+load_module modules/ngx_http_js_module.so;
+
+. Add this entry in the first line of emby's reverse proxy configuration file (`emby.conf`)
++
+[source]
+# change the path from "path-to/njs-emby-extlink.js"
+js_import embyPlugin from path-to/njs-emby-extlink.js;
+
+. Add a rewrite rule for root path in `emby.conf`
++
+[source]
+location / {
+  ...
+	## Emby Nginx Plugin: ExtPlay
+	rewrite ^/Videos/(\d+)/ExtPlay/ /emby/videos/$1/stream redirect;
+}
+
+. Add/change the following sections in `emby.conf`
++
+[source]
+location ~* /Users/(\w+)/Items/(\d+) {
+	js_header_filter embyPlugin.contentTypeJson;
+	js_body_filter embyPlugin.addExtLinkFilter buffer_type=string;
+  ## Others
+  proxy_pass http://emby;
+  ...
+}
++
+[source]
+location /Emby/Addons/ExtPlay {
+	js_content embyPlugin.handleExtPlay;
+}
+
+. Optional: Add/change the following sections to conceal system info
++
+[source]
+location ~* /System/Info {
+	js_header_filter embyPlugin.contentTypeJson;
+	js_body_filter embyPlugin.concealPublicInfo buffer_type=string;
+	## Others
+  proxy_pass http://emby;
+  ...
+}
+
+== License
+
+This project is licensed under https://www.gnu.org/licenses/agpl-3.0.en.html[AGPL-3.0 License].
+It used a portion of codes from https://github.com/jirutka/njs-typescript-starter[njs-typescript-starter], which is licensed under http://opensource.org/licenses/MIT/[MIT License]
